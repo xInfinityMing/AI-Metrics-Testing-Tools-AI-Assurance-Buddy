@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { DRIFT_ALERTS } from "@/data/mock";
 import { useProjects, useReports, getProjectById } from "@/data/projectStore";
+import { computeAllDriftAlerts } from "@/data/driftAlerts";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 
@@ -19,6 +19,8 @@ const Dashboard = () => {
   const REPORTS = useReports();
   const user = useCurrentUser();
   const firstName = user?.name?.split(" ")[0] ?? "there";
+  const driftAlerts = computeAllDriftAlerts(PROJECTS);
+  const highSeverityCount = driftAlerts.filter((a) => a.severity === "High").length;
   const trendBase = PROJECTS[0]?.trend ?? [];
   const trendData = trendBase.map((t, i) => ({
     name: t.run,
@@ -46,8 +48,14 @@ const Dashboard = () => {
           <StatCard label="Total Projects" value={PROJECTS.length} icon={FolderKanban} tone="primary" />
           <StatCard label="Active Runs" value={1} icon={PlayCircle} tone="info" hint="1 running now" />
           <StatCard label="Completed Reports" value={REPORTS.length} icon={FileBarChart2} tone="success" />
-          <StatCard label="Drift Alerts" value={DRIFT_ALERTS.length} icon={AlertTriangle} tone="warning" hint="1 high severity" />
-          <StatCard label="Last Updated" value="2 min ago" icon={Clock} hint="2025-04-19 14:24" />
+          <StatCard
+            label="Drift Alerts"
+            value={driftAlerts.length}
+            icon={AlertTriangle}
+            tone="warning"
+            hint={`${highSeverityCount} high severity`}
+          />
+          {/* <StatCard label="Last Updated" value="2 min ago" icon={Clock} hint="2025-04-19 14:24" /> */}
         </div>
 
         {/* <div className="grid gap-6 lg:grid-cols-3">
@@ -122,8 +130,8 @@ const Dashboard = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Project Name</TableHead>
-                  <TableHead>Use Case</TableHead>
-                  <TableHead>Environment</TableHead>
+                  {/* <TableHead>Use Case</TableHead> */}
+                  {/* <TableHead>Environment</TableHead> */}
                   <TableHead>Status</TableHead>
                   <TableHead>Last Run</TableHead>
                   <TableHead className="text-right">Overall Score</TableHead>
