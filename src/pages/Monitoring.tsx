@@ -105,9 +105,6 @@ const Monitoring = () => {
                         </span>
                       </div>
                       <CardTitle className="mt-1 text-lg">{project.name}</CardTitle>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {project.useCase ?? project.description} · {project.environment}
-                      </p>
                       <p className="mt-1 text-[11px] text-muted-foreground">
                         Drift engine: <span className="font-medium text-foreground">Evidently AI (future integration)</span>
                       </p>

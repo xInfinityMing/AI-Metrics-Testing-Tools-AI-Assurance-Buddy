@@ -30,8 +30,6 @@ const Projects = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Project</TableHead>
-                  <TableHead>Use Case</TableHead>
-                  <TableHead>Environment</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Last Run</TableHead>
                   <TableHead className="text-right">Score</TableHead>
@@ -45,10 +43,7 @@ const Projects = () => {
                       <Link to={`/projects/${p.id}`} className="font-medium hover:text-primary">
                         {p.name}
                       </Link>
-                      <div className="text-xs text-muted-foreground">{p.owner}</div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{p.useCase}</TableCell>
-                    <TableCell><span className="text-xs rounded-md bg-muted px-2 py-1">{p.environment}</span></TableCell>
                     <TableCell><StatusBadge status={p.status} /></TableCell>
                     <TableCell className="text-muted-foreground">{p.lastRun}</TableCell>
                     <TableCell className="text-right font-semibold tabular-nums">{p.overallScore}</TableCell>

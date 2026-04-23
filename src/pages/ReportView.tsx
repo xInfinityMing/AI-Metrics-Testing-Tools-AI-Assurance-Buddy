@@ -83,8 +83,6 @@ const ReportView = () => {
     heading("Project Details");
     writeLine(`Name: ${project.name}`);
     writeLine(`Use case: ${project.useCase}`);
-    writeLine(`Owner: ${project.owner}`);
-    writeLine(`Environment: ${project.environment}`);
     writeLine(`Mode: AI Workflow Mode`);
     writeLine(`Last run: ${project.lastRun}`);
 
@@ -172,8 +170,6 @@ const ReportView = () => {
           <CardContent className="grid gap-3 text-sm md:grid-cols-2">
             <Field k="Name" v={project.name} />
             <Field k="Use case" v={project.useCase} />
-            <Field k="Owner" v={project.owner} />
-            <Field k="Environment" v={project.environment} />
             <Field k="Mode" v="AI Workflow Mode" />
             <Field k="Last run" v={project.lastRun} />
           </CardContent>

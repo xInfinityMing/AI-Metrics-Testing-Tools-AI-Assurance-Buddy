@@ -130,8 +130,6 @@ const Dashboard = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Project Name</TableHead>
-                  {/* <TableHead>Use Case</TableHead> */}
-                  {/* <TableHead>Environment</TableHead> */}
                   <TableHead>Status</TableHead>
                   <TableHead>Last Run</TableHead>
                   <TableHead className="text-right">Overall Score</TableHead>
@@ -142,10 +140,6 @@ const Dashboard = () => {
                 {PROJECTS.map((p) => (
                   <TableRow key={p.id} className="cursor-pointer" onClick={() => navigate(`/projects/${p.id}`)}>
                     <TableCell className="font-medium">{p.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{p.useCase}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="rounded-full text-[10px]">{p.environment}</Badge>
-                    </TableCell>
                     <TableCell><StatusBadge status={p.status} /></TableCell>
                     <TableCell className="text-muted-foreground">{p.lastRun}</TableCell>
                     <TableCell className="text-right font-semibold tabular-nums">{p.overallScore}</TableCell>

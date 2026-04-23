@@ -47,8 +47,6 @@ const ProjectDetail = () => {
         <div className="flex flex-wrap items-center gap-3 rounded-2xl border bg-card p-4 shadow-sm">
           <StatusBadge status={project.status} />
           <RiskBadge level={project.riskLevel} />
-          <span className="text-xs text-muted-foreground">Environment</span>
-          <Badge variant="outline" className="rounded-full">{project.environment}</Badge>
           <span className="ml-auto text-xs text-muted-foreground">Last run: {project.lastRun}</span>
           <div className="text-2xl font-semibold tabular-nums">{project.overallScore}<span className="text-sm font-normal text-muted-foreground">/100</span></div>
         </div>
@@ -125,7 +123,6 @@ const ProjectDetail = () => {
                   </div>
                   <p className="mt-2 text-sm text-muted-foreground">{m.purpose}</p>
                   <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                    <span>{m.environment}</span>
                     {m.endpointLabel && <code className="rounded bg-muted px-1.5 py-0.5">{m.endpointLabel}</code>}
                   </div>
                 </CardContent>

@@ -160,14 +160,11 @@ const NewProject = () => {
         modelName: s.modelOrService,
         purpose: s.name,
         role: "Primary" as const,
-        environment: "Production" as const,
       }));
     return {
       name: name.trim() || "Untitled Project",
       useCase: "—",
       description: description.trim(),
-      environment: "Development" as const,
-      owner: "—",
       mode: "structured" as const,
       workflow,
       models: derivedModels,

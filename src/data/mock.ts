@@ -1,6 +1,5 @@
 export type Status = "Pass" | "Conditional Pass" | "Fail" | "Draft" | "Running";
 export type RiskLevel = "Low" | "Medium" | "High";
-export type Environment = "Development" | "Staging" | "Production";
 export type StepType =
   | "User Input"
   | "Retrieval / Knowledge Base"
@@ -43,7 +42,6 @@ export interface ModelCard {
   modelName: string;
   purpose: string;
   role: "Primary" | "Fallback";
-  environment: Environment;
   endpointLabel?: string;
 }
 
@@ -92,9 +90,6 @@ export interface Project {
   name: string;
   useCase: string;
   description: string;
-  environment: Environment;
-  owner: string;
-  systemUrl?: string;
   mode: "structured" | "api";
   status: Status;
   riskLevel: RiskLevel;
@@ -244,7 +239,6 @@ const SAMPLE_MODELS: ModelCard[] = [
     modelName: "GPT-4.1",
     purpose: "Primary answer generation",
     role: "Primary",
-    environment: "Production",
     endpointLabel: "openai/gpt-4.1",
   },
   {
@@ -253,7 +247,6 @@ const SAMPLE_MODELS: ModelCard[] = [
     modelName: "Claude 3.7",
     purpose: "Fallback reasoning",
     role: "Fallback",
-    environment: "Production",
     endpointLabel: "anthropic/claude-3.7",
   },
   {
@@ -262,7 +255,6 @@ const SAMPLE_MODELS: ModelCard[] = [
     modelName: "Custom Internal Model",
     purpose: "Guardrail + classification",
     role: "Primary",
-    environment: "Production",
   },
 ];
 
@@ -325,9 +317,6 @@ export const PROJECTS: Project[] = [
     name: "Internal Knowledge Assistant",
     useCase: "Employee Q&A over internal docs",
     description: "RAG assistant that answers employee questions from internal HR, IT and policy documents.",
-    environment: "Production",
-    owner: "Platform AI Team",
-    systemUrl: "https://kb-assistant.acme.internal",
     mode: "structured",
     status: "Pass",
     riskLevel: "Low",
@@ -355,8 +344,6 @@ export const PROJECTS: Project[] = [
     name: "Policy Q&A Bot",
     useCase: "Compliance-grade policy answers",
     description: "Customer-facing chatbot that answers regulatory and policy questions with citations.",
-    environment: "Staging",
-    owner: "Compliance Engineering",
     mode: "structured",
     status: "Conditional Pass",
     riskLevel: "Medium",
@@ -383,8 +370,6 @@ export const PROJECTS: Project[] = [
     name: "Customer Service Copilot",
     useCase: "Agent assist for support tickets",
     description: "Suggests responses and next-best-action for support agents handling customer tickets.",
-    environment: "Development",
-    owner: "Support AI Pod",
     mode: "structured",
     status: "Fail",
     riskLevel: "High",
