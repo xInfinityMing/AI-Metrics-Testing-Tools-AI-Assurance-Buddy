@@ -50,7 +50,7 @@ const Dashboard = () => {
           <StatCard label="Last Updated" value="2 min ago" icon={Clock} hint="2025-04-19 14:24" />
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        {/* <div className="grid gap-6 lg:grid-cols-3">
           <Card className="rounded-2xl shadow-sm lg:col-span-2">
             <CardHeader className="flex-row items-center justify-between">
               <div>
@@ -82,30 +82,30 @@ const Dashboard = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+        </div> */}
 
-          <Card className="rounded-2xl shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-base">Recent activity</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              {[
-                { t: "Run completed", d: "Internal Knowledge Assistant — score 88", time: "2m ago", color: "bg-success" },
-                { t: "Drift alert", d: "Retrieval drift on Policy Q&A Bot", time: "1h ago", color: "bg-warning" },
-                { t: "Report generated", d: "Pre-launch report for Policy Q&A Bot", time: "3h ago", color: "bg-info" },
-                { t: "Run failed", d: "Customer Service Copilot — score 54", time: "yesterday", color: "bg-danger" },
-              ].map((a, i) => (
-                <div key={i} className="flex items-start gap-3 rounded-xl border border-transparent p-2 hover:bg-muted/50">
-                  <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${a.color}`} />
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium">{a.t}</div>
-                    <div className="truncate text-xs text-muted-foreground">{a.d}</div>
-                  </div>
-                  <span className="shrink-0 text-[11px] text-muted-foreground">{a.time}</span>
+        <Card className="rounded-2xl shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-base">Recent activity</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            {[
+              { t: "Run completed", d: "Internal Knowledge Assistant — score 88", time: "2m ago", color: "bg-success" },
+              { t: "Drift alert", d: "Retrieval drift on Policy Q&A Bot", time: "1h ago", color: "bg-warning" },
+              { t: "Report generated", d: "Pre-launch report for Policy Q&A Bot", time: "3h ago", color: "bg-info" },
+              { t: "Run failed", d: "Customer Service Copilot — score 54", time: "yesterday", color: "bg-danger" },
+            ].map((a, i) => (
+              <div key={i} className="flex items-start gap-3 rounded-xl border border-transparent p-2 hover:bg-muted/50">
+                <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${a.color}`} />
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium">{a.t}</div>
+                  <div className="truncate text-xs text-muted-foreground">{a.d}</div>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
+                <span className="shrink-0 text-[11px] text-muted-foreground">{a.time}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
 
         <Card className="rounded-2xl shadow-sm">
           <CardHeader className="flex-row items-center justify-between">
