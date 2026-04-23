@@ -17,7 +17,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -26,7 +25,59 @@ import type { ProviderName, StepType, WorkflowStep } from "@/data/mock";
 import { PROVIDER_MODELS } from "@/data/mock";
 import { NODE_TYPES, QUICK_TEMPLATES, metaFor } from "@/data/workflowMeta";
 
-const PROVIDER_OPTIONS: ProviderName[] = ["OpenAI", "Anthropic", "Ollama", "Bedrock", "Internal API", "Internal Service", "None"];
+// AI model providers — only relevant when the step uses a generative AI model
+const AI_MODEL_PROVIDERS: ProviderName[] = ["OpenAI", "Anthropic", "Ollama", "Bedrock"];
+// Internal/service providers — for retrieval, tools, guardrails, rules, monitoring
+const INTERNAL_PROVIDERS: ProviderName[] = ["Internal API", "Internal Service"];
+
+// Step types that require a provider + model/service selection
+const STEP_NEEDS_SERVICE: Record<StepType, boolean> = {
+  "User Input": false,
+  "Final Response": false,
+  "Retrieval / Knowledge Base": true,
+  "LLM / Model Call": true,
+  "Tool / API Call": true,
+  "Guardrail / Validation": true,
+  "Post-processing / Rules": true,
+  "Monitoring / Drift": true,
+};
+
+// Step types that use an AI model provider (vs. an internal service provider)
+const STEP_USES_AI_MODEL: Record<StepType, boolean> = {
+  "User Input": false,
+  "Final Response": false,
+  "Retrieval / Knowledge Base": false,
+  "LLM / Model Call": true,
+  "Tool / API Call": false,
+  "Guardrail / Validation": false,
+  "Post-processing / Rules": false,
+  "Monitoring / Drift": false,
+};
+
+// Which I/O fields each step type actually needs.
+// - User Input: produces data, no upstream source -> output only
+// - Final Response: terminal node, consumes upstream -> input only
+// - Monitoring / Drift: observes the pipeline side-channel -> no I/O contract
+// - Everything else transforms data -> both
+const STEP_IO_FIELDS: Record<StepType, { input: boolean; output: boolean }> = {
+  "User Input": { input: false, output: true },
+  "Final Response": { input: true, output: false },
+  "Retrieval / Knowledge Base": { input: true, output: true },
+  "LLM / Model Call": { input: true, output: true },
+  "Tool / API Call": { input: true, output: true },
+  "Guardrail / Validation": { input: true, output: true },
+  "Post-processing / Rules": { input: true, output: true },
+  "Monitoring / Drift": { input: false, output: false },
+};
+
+function providerOptionsFor(type: StepType): ProviderName[] {
+  if (!STEP_NEEDS_SERVICE[type]) return [];
+  return STEP_USES_AI_MODEL[type] ? AI_MODEL_PROVIDERS : INTERNAL_PROVIDERS;
+}
+
+export function stepNeedsService(type: StepType): boolean {
+  return STEP_NEEDS_SERVICE[type];
+}
 
 interface Props {
   workflow: WorkflowStep[];
@@ -39,16 +90,17 @@ function newId() {
 
 function buildStep(type: StepType): WorkflowStep {
   const meta = metaFor(type);
+  const needs = STEP_NEEDS_SERVICE[type];
   return {
     id: newId(),
     name: type,
     type,
     description: meta.short,
-    modelOrService: "",
+    provider: needs ? undefined : "None",
+    modelOrService: needs ? "" : "No service required",
     inputSource: "",
     outputType: "",
     includeInTesting: true,
-    notes: "",
   };
 }
 
@@ -349,9 +401,6 @@ function SortableNode({
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="text-[10px] text-muted-foreground tabular-nums">{String(index + 1).padStart(2, "0")}</span>
               <span className="text-sm font-medium">{step.name || step.type}</span>
-              {step.includeInTesting && (
-                <Badge variant="outline" className="rounded-full border-info/20 bg-info-soft text-info text-[9px]">in testing</Badge>
-              )}
             </div>
             <div className="text-[11px] text-muted-foreground">
               {step.type}{step.modelOrService ? ` · ${step.modelOrService}` : ""}
@@ -416,13 +465,32 @@ function SortableNode({
 
 function ConfigPanel({ step, onChange }: { step: WorkflowStep; onChange: (patch: Partial<WorkflowStep>) => void }) {
   const meta = metaFor(step.type);
+  const needsService = STEP_NEEDS_SERVICE[step.type];
   return (
     <div className="space-y-3">
       <Field label="Step name">
         <Input value={step.name} onChange={(e) => onChange({ name: e.target.value })} />
       </Field>
       <Field label="Step type">
-        <Select value={step.type} onValueChange={(v) => onChange({ type: v as StepType })}>
+        <Select
+          value={step.type}
+          onValueChange={(v) => {
+            const nextType = v as StepType;
+            const nextNeeds = STEP_NEEDS_SERVICE[nextType];
+            const allowed = providerOptionsFor(nextType);
+            const keepProvider = step.provider && allowed.includes(step.provider);
+            const io = STEP_IO_FIELDS[nextType];
+            onChange({
+              type: nextType,
+              provider: nextNeeds ? (keepProvider ? step.provider : undefined) : "None",
+              modelOrService: nextNeeds
+                ? (keepProvider ? step.modelOrService : "")
+                : "No service required",
+              inputSource: io.input ? step.inputSource : "",
+              outputType: io.output ? step.outputType : "",
+            });
+          }}
+        >
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             {NODE_TYPES.map((n) => (
@@ -434,54 +502,72 @@ function ConfigPanel({ step, onChange }: { step: WorkflowStep; onChange: (patch:
       <Field label="Description">
         <Textarea rows={2} value={step.description} onChange={(e) => onChange({ description: e.target.value })} />
       </Field>
-      <div className="grid grid-cols-2 gap-2">
-        <Field label="Provider">
-          <Select
-            value={step.provider ?? ""}
-            onValueChange={(v) => {
-              const provider = v as ProviderName;
-              const firstModel = PROVIDER_MODELS[provider]?.[0] ?? "";
-              onChange({ provider, modelOrService: firstModel });
-            }}
-          >
-            <SelectTrigger><SelectValue placeholder="Select provider" /></SelectTrigger>
-            <SelectContent>
-              {PROVIDER_OPTIONS.map((p) => (
-                <SelectItem key={p} value={p}>{p}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-        <Field label="Model / Service">
-          <Select
-            value={step.modelOrService}
-            onValueChange={(v) => onChange({ modelOrService: v })}
-            disabled={!step.provider}
-          >
-            <SelectTrigger><SelectValue placeholder={step.provider ? "Select model" : "Pick provider first"} /></SelectTrigger>
-            <SelectContent>
-              {(step.provider ? PROVIDER_MODELS[step.provider] : []).map((m) => (
-                <SelectItem key={m} value={m}>{m}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <Field label="Input source">
-          <Input value={step.inputSource} onChange={(e) => onChange({ inputSource: e.target.value })} />
-        </Field>
-        <Field label="Output type">
-          <Input value={step.outputType} onChange={(e) => onChange({ outputType: e.target.value })} />
-        </Field>
-      </div>
-      <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
-        <div>
-          <div className="text-xs font-medium">Include in testing</div>
-          <div className="text-[10px] text-muted-foreground">Run assurance checks on this step.</div>
+
+      {needsService ? (
+        <div className="grid grid-cols-2 gap-2">
+          <Field label={STEP_USES_AI_MODEL[step.type] ? "AI model provider" : "Service provider"}>
+            <Select
+              value={step.provider ?? ""}
+              onValueChange={(v) => {
+                const provider = v as ProviderName;
+                const firstModel = PROVIDER_MODELS[provider]?.[0] ?? "";
+                onChange({ provider, modelOrService: firstModel });
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={STEP_USES_AI_MODEL[step.type] ? "Select AI provider" : "Select service provider"}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {providerOptionsFor(step.type).map((p) => (
+                  <SelectItem key={p} value={p}>{p}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label={STEP_USES_AI_MODEL[step.type] ? "AI model" : "Service"}>
+            <Select
+              value={step.modelOrService}
+              onValueChange={(v) => onChange({ modelOrService: v })}
+              disabled={!step.provider}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={step.provider ? (STEP_USES_AI_MODEL[step.type] ? "Select model" : "Select service") : "Pick provider first"} />
+              </SelectTrigger>
+              <SelectContent>
+                {(step.provider ? PROVIDER_MODELS[step.provider] : []).map((m) => (
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
         </div>
-        <Switch checked={step.includeInTesting} onCheckedChange={(v) => onChange({ includeInTesting: v })} />
-      </div>
+      ) : (
+        <div className="rounded-lg border bg-muted/30 p-3 text-[11px] text-muted-foreground">
+          This step type does not require a provider or model/service.
+        </div>
+      )}
+
+      {(() => {
+        const io = STEP_IO_FIELDS[step.type];
+        if (!io.input && !io.output) return null;
+        return (
+          <div className={cn("grid gap-2", io.input && io.output ? "grid-cols-2" : "grid-cols-1")}>
+            {io.input && (
+              <Field label="Input source">
+                <Input value={step.inputSource} onChange={(e) => onChange({ inputSource: e.target.value })} />
+              </Field>
+            )}
+            {io.output && (
+              <Field label="Output type">
+                <Input value={step.outputType} onChange={(e) => onChange({ outputType: e.target.value })} />
+              </Field>
+            )}
+          </div>
+        );
+      })()}
+
       <div className="rounded-lg border bg-card p-3">
         <div className="text-[11px] font-medium text-foreground">Suggested test dimensions</div>
         <div className="mt-1.5 flex flex-wrap gap-1">
@@ -490,17 +576,9 @@ function ConfigPanel({ step, onChange }: { step: WorkflowStep; onChange: (patch:
           ))}
         </div>
         <div className="mt-2 text-[10px] text-muted-foreground">
-          Auto-suggested based on node type. Adjust dimensions later in step 6.
+          Auto-suggested based on node type. Adjust dimensions later in step 5.
         </div>
       </div>
-      <Field label="Notes (optional)">
-        <Textarea
-          rows={2}
-          placeholder="Internal notes about this step…"
-          value={step.notes ?? ""}
-          onChange={(e) => onChange({ notes: e.target.value })}
-        />
-      </Field>
     </div>
   );
 }

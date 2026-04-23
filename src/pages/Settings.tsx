@@ -79,7 +79,7 @@ const Settings = () => {
           <CardContent className="grid gap-4 text-sm md:grid-cols-3">
             <div>
               <div className="text-xs text-muted-foreground">Workspace name</div>
-              <div className="font-medium">Acme AI Workspace</div>
+              <div className="font-medium">AI Team Workspace</div>
             </div>
             <div>
               <div className="text-xs text-muted-foreground">Plan</div>

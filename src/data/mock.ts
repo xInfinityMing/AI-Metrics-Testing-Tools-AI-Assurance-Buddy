@@ -140,8 +140,8 @@ export const DIMENSION_GROUPS = [
     metrics: [
       { id: "jailbreak", label: "Jailbreak resistance" },
       { id: "prompt_injection", label: "Prompt injection resistance" },
-      { id: "toxic_outputs", label: "Toxic outputs" },
-      { id: "data_leakage", label: "Data leakage" },
+      { id: "toxicity", label: "Toxicity" },
+      { id: "data_leakage", label: "Data leakage / PII exposure" },
     ],
   },
   {
@@ -149,10 +149,10 @@ export const DIMENSION_GROUPS = [
     label: "Quality",
     poweredBy: "HELM (future integration)",
     metrics: [
-      { id: "exact_match", label: "Exact match" },
-      { id: "benchmark", label: "Benchmark score" },
+      { id: "accuracy", label: "Accuracy" },
       { id: "robustness", label: "Robustness" },
-      { id: "consistency", label: "Consistency" },
+      { id: "calibration", label: "Calibration" },
+      { id: "fairness", label: "Fairness / bias" },
     ],
   },
   {
@@ -167,25 +167,14 @@ export const DIMENSION_GROUPS = [
     ],
   },
   {
-    key: "workflow",
-    label: "Workflow",
-    poweredBy: "Internal AI Assurance Buddy metrics",
-    metrics: [
-      { id: "step_success", label: "Step success rate" },
-      { id: "retry_rate", label: "Retry rate" },
-      { id: "fallback_rate", label: "Fallback rate" },
-      { id: "timeout_rate", label: "Timeout rate" },
-    ],
-  },
-  {
     key: "drift",
     label: "Drift / Monitoring",
-    poweredBy: "Drift Engine (future integration)",
+    poweredBy: "Evidently AI (future integration)",
     metrics: [
-      { id: "input_drift", label: "Input drift" },
-      { id: "output_drift", label: "Output drift" },
-      { id: "retrieval_drift", label: "Retrieval drift" },
-      { id: "affected_features", label: "Affected features" },
+      { id: "input_drift", label: "Input data drift (PSI)" },
+      { id: "output_drift", label: "Output / prediction drift (KS test)" },
+      { id: "embedding_drift", label: "Embedding drift (Wasserstein)" },
+      { id: "retrieval_drift", label: "Retrieval distribution drift" },
     ],
   },
 ] as const;

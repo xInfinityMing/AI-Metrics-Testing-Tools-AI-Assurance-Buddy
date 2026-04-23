@@ -10,12 +10,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { DRIFT_ALERTS } from "@/data/mock";
 import { useProjects, useReports, getProjectById } from "@/data/projectStore";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from "recharts";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const PROJECTS = useProjects();
   const REPORTS = useReports();
+  const user = useCurrentUser();
+  const firstName = user?.name?.split(" ")[0] ?? "there";
   const trendBase = PROJECTS[0]?.trend ?? [];
   const trendData = trendBase.map((t, i) => ({
     name: t.run,
@@ -27,7 +30,7 @@ const Dashboard = () => {
   return (
     <AppShell>
       <PageHeader
-        title="Welcome back, Jordan"
+        title={`Welcome back, ${firstName}`}
         description="Monitor AI assurance across your workspace. All systems mocked for this POC demo."
         crumbs={[{ label: "Workspace" }, { label: "Dashboard" }]}
         actions={

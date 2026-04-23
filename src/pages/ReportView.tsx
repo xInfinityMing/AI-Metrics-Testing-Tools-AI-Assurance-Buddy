@@ -85,7 +85,7 @@ const ReportView = () => {
     writeLine(`Use case: ${project.useCase}`);
     writeLine(`Owner: ${project.owner}`);
     writeLine(`Environment: ${project.environment}`);
-    writeLine(`Mode: Structured Workflow Mode`);
+    writeLine(`Mode: AI Workflow Mode`);
     writeLine(`Last run: ${project.lastRun}`);
 
     heading("Workflow Overview");
@@ -174,7 +174,7 @@ const ReportView = () => {
             <Field k="Use case" v={project.useCase} />
             <Field k="Owner" v={project.owner} />
             <Field k="Environment" v={project.environment} />
-            <Field k="Mode" v="Structured Workflow Mode" />
+            <Field k="Mode" v="AI Workflow Mode" />
             <Field k="Last run" v={project.lastRun} />
           </CardContent>
         </Card>
@@ -248,8 +248,8 @@ const ReportView = () => {
           <DialogHeader><DialogTitle>Share report</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground">Anyone with this link can view the report (mocked).</p>
           <div className="flex gap-2">
-            <Input readOnly value={`https://assurance.acme.ai/r/${report.id}`} />
-            <Button variant="outline" className="gap-1" onClick={() => { navigator.clipboard?.writeText(`https://assurance.acme.ai/r/${report.id}`); toast.success("Link copied"); }}>
+            <Input readOnly value={`https://assurance.wphdigital.com/r/${report.id}`} />
+            <Button variant="outline" className="gap-1" onClick={() => { navigator.clipboard?.writeText(`https://assurance.wphdigital.com/r/${report.id}`); toast.success("Link copied"); }}>
               <Copy className="h-4 w-4" /> Copy
             </Button>
           </div>

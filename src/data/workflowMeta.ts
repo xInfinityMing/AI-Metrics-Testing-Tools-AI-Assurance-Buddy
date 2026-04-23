@@ -18,7 +18,7 @@ export const NODE_TYPES: NodeTypeMeta[] = [
     icon: MessageSquare,
     short: "Capture user query",
     tone: "bg-info-soft text-info border-info/20",
-    suggestedDimensions: ["Input", "Workflow"],
+    suggestedDimensions: ["Safety"],
   },
   {
     type: "Retrieval / Knowledge Base",
@@ -39,7 +39,7 @@ export const NODE_TYPES: NodeTypeMeta[] = [
     icon: Wrench,
     short: "Invoke external service",
     tone: "bg-warning-soft text-warning border-warning/20",
-    suggestedDimensions: ["Workflow", "Reliability"],
+    suggestedDimensions: ["Quality"],
   },
   {
     type: "Guardrail / Validation",
@@ -53,21 +53,21 @@ export const NODE_TYPES: NodeTypeMeta[] = [
     icon: Sparkles,
     short: "Apply rules & formatting",
     tone: "bg-muted text-muted-foreground border-border",
-    suggestedDimensions: ["Workflow"],
+    suggestedDimensions: ["Quality"],
   },
   {
     type: "Final Response",
     icon: Send,
     short: "Return to user",
     tone: "bg-primary-soft text-primary border-primary/20",
-    suggestedDimensions: ["Quality", "Grounding"],
+    suggestedDimensions: ["Quality", "Grounding / RAG"],
   },
   {
     type: "Monitoring / Drift",
     icon: Activity,
     short: "Observe drift & quality",
     tone: "bg-danger-soft text-danger border-danger/20",
-    suggestedDimensions: ["Drift", "Monitoring"],
+    suggestedDimensions: ["Drift / Monitoring"],
   },
 ];
 

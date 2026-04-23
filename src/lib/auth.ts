@@ -14,25 +14,46 @@ export type DemoUser = {
 
 export const MOCK_USERS: Omit<DemoUser, "loggedInAt">[] = [
   {
-    email: "alson.tan@acme.ai",
+    email: "alson.tan@wphdigital.com",
     name: "Alson Tan",
     role: "AI Team Lead",
-    workspace: "Acme AI",
+    workspace: "AI Team",
     initials: "AT",
   },
   {
-    email: "sophia.hernandez@acme.ai",
+    email: "sophia.h@wphdigital.com",
     name: "Sophia Hernandez",
-    role: "QA Validator",
-    workspace: "Acme AI",
+    role: "AI Developer",
+    workspace: "AI Team",
     initials: "SH",
   },
   {
-    email: "jethro.m@acme.ai",
-    name: "Jethro M.",
-    role: "AI Developer",
-    workspace: "Acme AI",
+    email: "jethro.m@wphdigital.com",
+    name: "Jethro Moleño",
+    role: "AI Researcher",
+    workspace: "AI Team",
     initials: "JM",
+  },
+  {
+    email: "jean.m@wphdigital.com",
+    name: "Jean Eileen",
+    role: "AI Researcher",
+    workspace: "AI Team",
+    initials: "JE",
+  },
+  {
+    email: "jonathan.u@wphdigital.com",
+    name: "Jonathan Paul",
+    role: "AI Researcher",
+    workspace: "AI Team",
+    initials: "JP",
+  },
+  {
+    email: "leonard.t@wphdigital.com",
+    name: "Leonard Reshley",
+    role: "AI Developer",
+    workspace: "AI Team",
+    initials: "LR",
   },
 ];
 
@@ -70,7 +91,7 @@ function deriveFromEmail(email: string): Omit<DemoUser, "loggedInAt"> {
     email,
     name: prettyName || "Demo User",
     role: "AI Developer",
-    workspace: "Acme AI",
+    workspace: "AI Team",
     initials: initials || "DU",
   };
 }

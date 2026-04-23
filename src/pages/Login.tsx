@@ -80,7 +80,7 @@ const Login = () => {
         <div className="space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-medium backdrop-blur">
             <Sparkles className="h-3.5 w-3.5" />
-            Enterprise AI Assurance
+            AI Metrics Testing Tools
           </div>
           <h1 className="max-w-md text-4xl font-semibold leading-tight tracking-tight">
             Define AI systems, assign models in workflow steps, and ship with confidence.
@@ -91,7 +91,7 @@ const Login = () => {
 
           <div className="grid max-w-md gap-3 pt-2">
             {[
-              { icon: Workflow, label: "Structured workflow builder with per-step model selection" },
+              { icon: Workflow, label: "AI Workflow builder with per-step model selection" },
               { icon: ShieldCheck, label: "Safety, quality, grounding, workflow & drift dimensions" },
               { icon: FileBarChart2, label: "Unified assurance reports — presentation-ready" },
             ].map((f) => (
@@ -105,7 +105,7 @@ const Login = () => {
           </div>
         </div>
 
-        <p className="text-xs text-white/60">© {new Date().getFullYear()} Acme AI Workspace · POC demo</p>
+        <p className="text-xs text-white/60">© {new Date().getFullYear()} AI Team Workspace · POC demo</p>
 
         {/* Decorative glow */}
         <div

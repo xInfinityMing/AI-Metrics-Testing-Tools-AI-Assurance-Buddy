@@ -18,7 +18,7 @@ const items = [
   { title: "Projects", url: "/projects", icon: FolderKanban, end: false },
   { title: "Reports", url: "/reports", icon: FileBarChart2, end: false },
   { title: "Monitoring", url: "/monitoring", icon: Activity, end: false },
-  { title: "Settings", url: "/settings", icon: Settings, end: false },
+  // { title: "Settings", url: "/settings", icon: Settings, end: false },
 ];
 
 export function AppSidebar() {
@@ -34,8 +34,8 @@ export function AppSidebar() {
           </div>
           {!collapsed && (
             <div className="flex flex-col leading-tight">
-              <span className="text-sm font-semibold text-sidebar-foreground">AI Assurance Buddy</span>
-              <span className="text-[11px] text-sidebar-foreground/60">Acme AI Workspace</span>
+              <span className="text-sm font-semibold text-sidebar-foreground">AI Metric Testing Tools</span>
+              <span className="text-[11px] text-sidebar-foreground/60">AI Assurance Buddy</span>
             </div>
           )}
         </div>

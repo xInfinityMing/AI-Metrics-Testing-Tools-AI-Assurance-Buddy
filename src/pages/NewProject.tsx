@@ -14,24 +14,33 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
-  DEFAULT_WORKFLOW, DIMENSION_GROUPS, MODELS, PROVIDERS, type ModelCard,
-  type WorkflowStep, type DataSource, type Environment,
+  DEFAULT_WORKFLOW, DIMENSION_GROUPS, type WorkflowStep, type DataSource,
 } from "@/data/mock";
 import { createProject } from "@/data/projectStore";
-import { WorkflowBuilder } from "@/components/workflow/WorkflowBuilder";
+import { WorkflowBuilder, stepNeedsService } from "@/components/workflow/WorkflowBuilder";
 
 const STEPS = [
   { id: 1, label: "Project Details", icon: FileText },
   { id: 2, label: "Choose Mode", icon: Sparkles },
   { id: 3, label: "Define AI Workflow", icon: Workflow },
-  { id: 4, label: "Data Sources", icon: Database },
-  { id: 5, label: "Test Dimensions", icon: ListChecks },
+  { id: 4, label: "Test Dimensions", icon: ListChecks },
+  { id: 5, label: "Data Sources", icon: Database },
   { id: 6, label: "Review & Confirm", icon: FileCheck2 },
 ];
+
+// Maps each test-dimension group to the data sources required to evaluate it.
+// Used to dynamically validate the Data Sources step based on what the user
+// actually picked in the Test Dimensions step.
+const DIMENSION_TO_REQUIRED_SOURCES: Record<string, DataSource["type"][]> = {
+  safety: ["Prompt Set"],
+  quality: ["Benchmark Dataset"],
+  grounding: ["RAG Dataset", "Retrieval Context / Knowledge Base"],
+  drift: ["Reference Dataset", "Current Dataset"],
+};
 
 const initialDataSources: DataSource[] = [
   { id: "n1", type: "Prompt Set", status: "Empty" },
@@ -50,20 +59,11 @@ const NewProject = () => {
 
   // form state
   const [name, setName] = useState("New AI Project");
-  const [useCase, setUseCase] = useState("Internal Q&A");
   const [description, setDescription] = useState("");
-  const [environment, setEnvironment] = useState("Development");
-  const [owner, setOwner] = useState("Platform AI Team");
-  const [systemUrl, setSystemUrl] = useState("");
   const [tags, setTags] = useState<string[]>(["RAG", "Internal"]);
   const [tagInput, setTagInput] = useState("");
   const [mode, setMode] = useState<"structured" | "api">("structured");
   const [workflow, setWorkflow] = useState<WorkflowStep[]>(DEFAULT_WORKFLOW);
-  const [models, setModels] = useState<ModelCard[]>([
-    { id: "nm1", provider: "OpenAI", modelName: "GPT-4.1", purpose: "Primary generation", role: "Primary", environment: "Production", endpointLabel: "openai/gpt-4.1" },
-    { id: "nm2", provider: "Anthropic", modelName: "Claude 3.7", purpose: "Fallback reasoning", role: "Fallback", environment: "Production" },
-    { id: "nm3", provider: "Internal API", modelName: "Custom Internal Model", purpose: "Guardrail & classification", role: "Primary", environment: "Production" },
-  ]);
   const [dataSources, setDataSources] = useState<DataSource[]>(initialDataSources);
   const [selected, setSelected] = useState<string[]>(ALL_METRIC_IDS);
 
@@ -73,12 +73,11 @@ const NewProject = () => {
   const stepValidation = useMemo<{ ok: boolean; reason?: string }>(() => {
     if (step === 1) {
       if (!name.trim()) return { ok: false, reason: "Project name is required." };
-      if (!useCase.trim()) return { ok: false, reason: "Use case is required." };
       if (!description.trim()) return { ok: false, reason: "Description is required." };
       return { ok: true };
     }
     if (step === 2) {
-      if (mode !== "structured") return { ok: false, reason: "Choose Structured Workflow Mode to continue." };
+      if (mode !== "structured") return { ok: false, reason: "Choose AI Workflow Mode to continue." };
       return { ok: true };
     }
     if (step === 3) {
@@ -88,27 +87,36 @@ const NewProject = () => {
       const finalCount = workflow.filter((s) => s.type === "Final Response").length;
       if (finalCount !== 1) return { ok: false, reason: "Exactly one Final Response step is allowed." };
       const needsService = workflow.find(
-        (s) => s.type !== "User Input" && s.type !== "Final Response" && (!s.provider || !s.modelOrService),
+        (s) => stepNeedsService(s.type) && (!s.provider || !s.modelOrService),
       );
       if (needsService) return { ok: false, reason: `Step "${needsService.name}" needs a provider and model/service.` };
       return { ok: true };
     }
     if (step === 4) {
-      const needsBenchmark = selected.some((k) => k.startsWith("quality."));
-      const needsRag = selected.some((k) => k.startsWith("grounding."));
-      const needsDrift = selected.some((k) => k.startsWith("drift."));
-      const has = (t: DataSource["type"]) => dataSources.find((d) => d.type === t)?.status === "Uploaded";
-      if (needsBenchmark && !has("Benchmark Dataset")) return { ok: false, reason: "Upload a Benchmark Dataset (required by Quality)." };
-      if (needsRag && !has("RAG Dataset") && !has("Retrieval Context / Knowledge Base")) return { ok: false, reason: "Upload a RAG dataset or Retrieval Context (required by Grounding)." };
-      if (needsDrift && (!has("Reference Dataset") || !has("Current Dataset"))) return { ok: false, reason: "Upload Reference + Current datasets (required by Drift)." };
-      return { ok: true };
-    }
-    if (step === 5) {
       if (selected.length === 0) return { ok: false, reason: "Select at least one test dimension." };
       return { ok: true };
     }
+    if (step === 5) {
+      // Data Sources required are derived from the dimensions selected in step 4.
+      const required = new Set<DataSource["type"]>();
+      for (const g of DIMENSION_GROUPS) {
+        const groupHasSelection = g.metrics.some((m) => selected.includes(`${g.key}.${m.id}`));
+        if (!groupHasSelection) continue;
+        for (const t of DIMENSION_TO_REQUIRED_SOURCES[g.key] ?? []) required.add(t);
+      }
+      const missing = Array.from(required).filter(
+        (t) => !dataSources.find((d) => d.type === t && d.status === "Uploaded"),
+      );
+      if (missing.length > 0) {
+        return {
+          ok: false,
+          reason: `Upload required data source${missing.length === 1 ? "" : "s"} for the dimensions you picked: ${missing.join(", ")}.`,
+        };
+      }
+      return { ok: true };
+    }
     return { ok: true };
-  }, [step, name, useCase, description, mode, workflow, selected, dataSources]);
+  }, [step, name, description, mode, workflow, selected, dataSources]);
 
   function next() {
     if (!stepValidation.ok) {
@@ -129,17 +137,6 @@ const NewProject = () => {
     setTags(tags.filter((x) => x !== t));
   }
 
-  function addModel() {
-    setModels((m) => [...m, {
-      id: `nm${Date.now()}`, provider: "OpenAI", modelName: "GPT-4.1",
-      purpose: "", role: "Primary", environment: "Development",
-    }]);
-  }
-  function removeModel(id: string) { setModels((m) => m.filter((x) => x.id !== id)); }
-  function updateModel(id: string, patch: Partial<ModelCard>) {
-    setModels((m) => m.map((x) => (x.id === id ? { ...x, ...patch } : x)));
-  }
-
   function simulateUpload(id: string) {
     const fakeRows = Math.floor(400 + Math.random() * 4000);
     setDataSources((ds) => ds.map((d) => d.id === id ? {
@@ -154,16 +151,26 @@ const NewProject = () => {
   }
 
   function buildPayload() {
+    // Derive a model summary from the workflow so existing project data still renders.
+    const derivedModels = workflow
+      .filter((s) => s.provider && s.modelOrService && s.provider !== "None")
+      .map((s, i) => ({
+        id: `wm${i}`,
+        provider: s.provider as "OpenAI" | "Anthropic" | "Ollama" | "Bedrock" | "Internal API",
+        modelName: s.modelOrService,
+        purpose: s.name,
+        role: "Primary" as const,
+        environment: "Production" as const,
+      }));
     return {
       name: name.trim() || "Untitled Project",
-      useCase: useCase.trim() || "—",
+      useCase: "—",
       description: description.trim(),
-      environment: environment as Environment,
-      owner: owner.trim() || "Unassigned",
-      systemUrl: systemUrl.trim() || undefined,
+      environment: "Development" as const,
+      owner: "—",
       mode: "structured" as const,
       workflow,
-      models,
+      models: derivedModels,
       dataSources,
       selectedDimensions: selected,
     };
@@ -239,27 +246,12 @@ const NewProject = () => {
           {step === 1 && (
             <Card className="rounded-2xl shadow-sm">
               <CardHeader><CardTitle className="text-base">Project Details</CardTitle></CardHeader>
-              <CardContent className="grid gap-5 md:grid-cols-2">
+              <CardContent className="grid gap-5">
                 <Field label="Project Name"><Input value={name} onChange={(e) => setName(e.target.value)} /></Field>
-                <Field label="Use Case"><Input value={useCase} onChange={(e) => setUseCase(e.target.value)} /></Field>
-                <Field label="Description" className="md:col-span-2">
+                <Field label="Description">
                   <Textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Briefly describe what this AI system does." />
                 </Field>
-                <Field label="Environment">
-                  <Select value={environment} onValueChange={setEnvironment}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Development">Development</SelectItem>
-                      <SelectItem value="Staging">Staging</SelectItem>
-                      <SelectItem value="Production">Production</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Owner / Team"><Input value={owner} onChange={(e) => setOwner(e.target.value)} /></Field>
-                <Field label="AI System URL (optional)" className="md:col-span-2">
-                  <Input value={systemUrl} onChange={(e) => setSystemUrl(e.target.value)} placeholder="https://" />
-                </Field>
-                <Field label="Tags" className="md:col-span-2">
+                <Field label="Tags">
                   <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-card p-2">
                     {tags.map((t) => (
                       <Badge key={t} variant="outline" className="gap-1 rounded-full bg-primary-soft text-primary border-primary/20">
@@ -297,7 +289,7 @@ const NewProject = () => {
                   </div>
                   <Badge variant="outline" className="rounded-full border-success/20 bg-success-soft text-success">Active</Badge>
                 </div>
-                <h3 className="mt-4 text-base font-semibold">Structured Workflow Mode</h3>
+                <h3 className="mt-4 text-base font-semibold">AI Workflow Mode</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Define your AI system using workflow steps, assign models &amp; services, then select testing dimensions.
                 </p>
@@ -326,45 +318,6 @@ const NewProject = () => {
           )}
 
           {step === 4 && (
-            <Card className="rounded-2xl shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-base">Data Sources</CardTitle>
-                <p className="text-xs text-muted-foreground">Uploads are simulated for this POC.</p>
-              </CardHeader>
-              <CardContent className="grid gap-3 md:grid-cols-2">
-                {dataSources.map((d) => (
-                  <div key={d.id} className="rounded-xl border bg-card p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium">{d.type}</div>
-                        {d.status === "Uploaded" ? (
-                          <div className="mt-1 text-xs text-muted-foreground">
-                            {d.fileName} · {d.rowCount?.toLocaleString()} rows · {d.uploadedAt}
-                          </div>
-                        ) : (
-                          <div className="mt-1 text-xs text-muted-foreground">No file uploaded yet</div>
-                        )}
-                      </div>
-                      {d.status === "Uploaded" ? (
-                        <div className="flex flex-col items-end gap-1">
-                          <Badge variant="outline" className="rounded-full border-success/20 bg-success-soft text-success">
-                            <CheckCircle2 className="mr-1 h-3 w-3" /> Ready
-                          </Badge>
-                          <span className="text-[10px] text-muted-foreground">parsed</span>
-                        </div>
-                      ) : (
-                        <Button size="sm" variant="outline" onClick={() => simulateUpload(d.id)} className="gap-1">
-                          <Upload className="h-3.5 w-3.5" /> Upload
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-
-          {step === 5 && (
             <div className="grid gap-4 md:grid-cols-2">
               {DIMENSION_GROUPS.map((g) => (
                 <Card key={g.key} className="rounded-2xl shadow-sm">
@@ -384,6 +337,13 @@ const NewProject = () => {
                     })}
                     <div className="border-t pt-3 text-[11px] text-muted-foreground">
                       Powered by <span className="font-medium text-foreground">{g.poweredBy}</span>
+                      {(DIMENSION_TO_REQUIRED_SOURCES[g.key]?.length ?? 0) > 0 && (
+                        <div className="mt-1">
+                          Requires: <span className="font-medium text-foreground">
+                            {DIMENSION_TO_REQUIRED_SOURCES[g.key]!.join(", ")}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -391,18 +351,104 @@ const NewProject = () => {
             </div>
           )}
 
+          {step === 5 && (() => {
+            const requiredTypes = new Set<DataSource["type"]>();
+            for (const g of DIMENSION_GROUPS) {
+              const groupHasSelection = g.metrics.some((m) => selected.includes(`${g.key}.${m.id}`));
+              if (!groupHasSelection) continue;
+              for (const t of DIMENSION_TO_REQUIRED_SOURCES[g.key] ?? []) requiredTypes.add(t);
+            }
+            const required = dataSources.filter((d) => requiredTypes.has(d.type));
+            const optional = dataSources.filter((d) => !requiredTypes.has(d.type));
+            const renderCard = (d: DataSource, isRequired: boolean) => (
+              <div
+                key={d.id}
+                className={cn(
+                  "rounded-xl border bg-card p-4",
+                  isRequired && d.status !== "Uploaded" && "border-warning/40 bg-warning-soft/40",
+                )}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      {d.type}
+                      {isRequired && (
+                        <Badge variant="outline" className="rounded-full border-warning/30 bg-warning-soft text-warning text-[10px]">
+                          Required
+                        </Badge>
+                      )}
+                    </div>
+                    {d.status === "Uploaded" ? (
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {d.fileName} · {d.rowCount?.toLocaleString()} rows · {d.uploadedAt}
+                      </div>
+                    ) : (
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {isRequired ? "Required by your selected test dimensions." : "No file uploaded yet"}
+                      </div>
+                    )}
+                  </div>
+                  {d.status === "Uploaded" ? (
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge variant="outline" className="rounded-full border-success/20 bg-success-soft text-success">
+                        <CheckCircle2 className="mr-1 h-3 w-3" /> Ready
+                      </Badge>
+                      <span className="text-[10px] text-muted-foreground">parsed</span>
+                    </div>
+                  ) : (
+                    <Button size="sm" variant="outline" onClick={() => simulateUpload(d.id)} className="gap-1">
+                      <Upload className="h-3.5 w-3.5" /> Upload
+                    </Button>
+                  )}
+                </div>
+              </div>
+            );
+            return (
+              <Card className="rounded-2xl shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-base">Data Sources</CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Required sources are derived from the test dimensions you selected. Uploads are simulated for this POC.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {required.length > 0 && (
+                    <div>
+                      <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Required for your selected dimensions
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {required.map((d) => renderCard(d, true))}
+                      </div>
+                    </div>
+                  )}
+                  {optional.length > 0 && (
+                    <div>
+                      <div className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Optional sources
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {optional.map((d) => renderCard(d, false))}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })()}
+
           {step === 6 && (
             <div className="space-y-4">
               <Card className="rounded-2xl shadow-sm">
                 <CardHeader><CardTitle className="text-base">Project</CardTitle></CardHeader>
-                <CardContent className="grid gap-4 text-sm md:grid-cols-3">
+                <CardContent className="grid gap-4 text-sm md:grid-cols-2">
                   <Summary k="Name" v={name} />
-                  <Summary k="Use case" v={useCase} />
-                  <Summary k="Environment" v={environment} />
-                  <Summary k="Owner" v={owner} />
-                  <Summary k="Mode" v="Structured Workflow Mode" />
-                  <Summary k="System URL" v={systemUrl || "—"} />
-                  <div className="md:col-span-3">
+                  <Summary k="Mode" v="AI Workflow Mode" />
+                  <div className="md:col-span-2">
+                    <div className="text-xs text-muted-foreground">Description</div>
+                    <div className="text-sm">{description || "—"}</div>
+                  </div>
+                  <div className="md:col-span-2">
                     <div className="text-xs text-muted-foreground">Tags</div>
                     <div className="mt-1 flex flex-wrap gap-1.5">
                       {tags.length === 0 && <span className="text-sm text-muted-foreground">—</span>}

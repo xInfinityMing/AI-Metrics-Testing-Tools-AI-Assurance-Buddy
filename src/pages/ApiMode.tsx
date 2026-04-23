@@ -49,7 +49,7 @@ const ApiMode = () => {
               <div className="grid gap-3 md:grid-cols-2">
                 <div>
                   <div className="text-xs text-muted-foreground">Endpoint URL</div>
-                  <Input disabled placeholder="https://api.acme.ai/v1/chat" />
+                  <Input disabled placeholder="https://api.wphdigital.com/v1/chat" />
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground">Auth</div>
