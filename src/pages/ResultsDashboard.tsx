@@ -85,7 +85,7 @@ const ResultsDashboard = () => {
           <StatCard label="Safety score" value={project.results.find((r) => r.key === "safety")?.score ?? "—"} icon={ShieldCheck} tone="success" />
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        {/* <div className="grid gap-6 lg:grid-cols-3">
           <Card className="rounded-2xl shadow-sm">
             <CardHeader><CardTitle className="text-base">Dimension scores</CardTitle></CardHeader>
             <CardContent className="h-72">
@@ -128,9 +128,9 @@ const ResultsDashboard = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
-        </div>
+        </div> */}
 
-        <Card className="rounded-2xl shadow-sm">
+        {/* <Card className="rounded-2xl shadow-sm">
           <CardHeader><CardTitle className="text-base">Pass / fail by dimension</CardTitle></CardHeader>
           <CardContent className="h-72">
             <ResponsiveContainer width="100%" height="100%">
@@ -145,7 +145,7 @@ const ResultsDashboard = () => {
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Detailed sections */}
         <div className="grid gap-4 md:grid-cols-2">
